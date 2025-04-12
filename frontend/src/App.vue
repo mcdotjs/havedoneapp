@@ -1,41 +1,70 @@
 <script lang="ts" setup>
-import tailwindcss from "tailwindcss";
 import { onMounted, reactive, ref, computed, watchEffect } from "vue";
+import { EventsOn } from "../wailsjs/runtime/runtime";
 import {
-  Print,
-  GetCount,
   StartStopwatch,
   StartTickerLoop,
   StopTicker,
 } from "../wailsjs/go/main/App";
 
-const data = reactive({
-  name: "",
-  resultText: "Please enter your name below 👇",
-});
-
 const count = ref(0);
-
 const str = ref("");
-const interval = ref("1s");
-const timerDuration = ref("0s");
-const lenInSeconds = ref(0);
+const timerDuration = ref("30m");
+const lenInSeconds = ref(1800);
+const setFocusTime = (v: any) => {
+  lenInSeconds.value = v;
+  pauseModal.value = false;
+};
 const stop = () => {
   StopTicker();
 };
 
 function start() {
-  StartTickerLoop(interval.value, timerDuration.value);
+  pauseModal.value = false;
+  StartTickerLoop("1s", timerDuration.value);
 }
 
 onMounted(() => {
+  pauseModal.value = false;
   StartStopwatch("1s");
 
-  setInterval(async () => {
-    count.value = await GetCount();
-    str.value = await Print();
-  }, 100);
+  EventsOn("timer-update", (data) => {
+    str.value = data.HumanReadable;
+    count.value = data.Count;
+  });
 });
+
+const pausesInSeconds = [
+  {
+    asString: "10s",
+    val: 10,
+    type: "info",
+    help:"Bugy bugy"
+  },
+
+  {
+    asString: "10m",
+    val: 600,
+    type: "warning",
+
+    help:"Little shajt"
+  },
+
+  {
+    asString: "30m",
+    val: 1800,
+    type: "success",
+
+    help:"Best chojse"
+  },
+
+  {
+    asString: "1h",
+    val: 3600,
+    type: "danger",
+    help:"What am I doing here?!"
+  },
+];
 
 const colors = [
   { color: "#f56c6c", percentage: 20 },
@@ -46,42 +75,57 @@ const colors = [
 ];
 
 const percentage = computed(() => (count.value / lenInSeconds.value) * 100);
+const pauseModal = ref(false);
 watchEffect(() => {
   timerDuration.value = lenInSeconds.value + "s";
+  if (count.value == lenInSeconds.value) {
+    pauseModal.value = true;
+  }
 });
 </script>
 <template>
-  <div class="flex flex-wrap justify-center items-center gap-16 py-12">
+  <div
+    v-if="pauseModal"
+    class="text-7xl absolute h-48 w-96 top-0 z-20 right-0 bg-red-500 rounded-lg m-12 flex justify-center items-center"
+  >
+    Pauza!!
+    <span class="absolute top-2 right-3 text-xs cursor-pointer" @click="pauseModal = false"
+      >ouyeeeh</span
+    >
+  </div>
+  <div class="flex flex-col justify-center items-center gap-16 py-12">
     <div class="text-5xl p-3 py-7">
       {{ str }}
     </div>
-    <div class="">
-      <el-progress
-        type="dashboard"
-        width="300"
-        :percentage="percentage.toFixed()"
-        :color="colors"
-      />
-    </div>
-    <div class="slider-demo-block flex justify-center items-center w-full">
-      <el-slider v-model="lenInSeconds" :min="10" :max="333" />
+    <div
+      class="slider-demo-block flex flex-col justify-center items-center w-full text-7xl"
+    >
+      <div class="text-3xl italic pb-3">Fockus Time!!</div>
+      <div class="flex justify-center items-center gap-3">
+        <el-button
+          v-for="item in pausesInSeconds"
+          :key="item.val"
+          :label="item.asString"
+          @click="setFocusTime(item.val)"
+          :type="item.type"
+          size="large"
+          link
+          class="text-5xl relative"
+        >
+          {{ item.asString }}<span class="text-xs absolute -bottom-3 left-2 w-5">{{item.help}}</span></el-button
+        >
+      </div>
     </div>
     <main class="w-full h-screen">
+      <div class="pt-7">
+        <el-progress
+          type="dashboard"
+          width="300"
+          :percentage="percentage.toFixed()"
+          :color="colors"
+        />
+      </div>
       <div id="input" class="text-black">
-        <!-- <div class="bg-gray-300 flex flex-row justify-center gap-8"> -->
-        <!--   <div class="text-3xl"> -->
-        <!--     Timer Duration -->
-        <!--     <el-input -->
-        <!--       id="name" -->
-        <!--       v-model="timerDuration" -->
-        <!--       autocomplete="off" -->
-        <!--       class="text-2xl" -->
-        <!--       type="text" -->
-        <!--     /> -->
-        <!---->
-        <!--     <el-tag size="small">School</el-tag> -->
-        <!--   </div> -->
-        <!-- </div> -->
         <el-button
           type="success"
           size="large"

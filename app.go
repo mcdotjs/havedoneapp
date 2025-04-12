@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"time"
 )
 
@@ -14,6 +15,11 @@ type App struct {
 	humanReadeble string
 	startingTime  time.Time
 	expiredIn     time.Duration
+}
+
+type Emiting struct {
+	Count         int
+	HumanReadable string
 }
 
 // NewApp creates a new App application struct
@@ -90,6 +96,7 @@ func (a *App) StartStopwatch(interval string) {
 		for {
 			t := <-ticker.C
 			a.humanReadeble = t.Local().Format("15:04:05")
+			runtime.EventsEmit(a.ctx, "timer-update", Emiting{Count: a.count, HumanReadable: a.humanReadeble})
 		}
 	}()
 }
