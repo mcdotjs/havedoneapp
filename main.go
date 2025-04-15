@@ -10,11 +10,13 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+var def *string
 
 func main() {
 	// Create an instance of the app structure
 	app := NewApp()
-
+	temp := "-00m00.00"
+	def = &temp
 	// Create application with options
 	err := wails.Run(&options.App{
 		Title:  "havedoneapp",

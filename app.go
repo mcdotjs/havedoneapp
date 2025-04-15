@@ -15,11 +15,13 @@ type App struct {
 	humanReadeble string
 	startingTime  time.Time
 	expiredIn     time.Duration
+	remainingTime *string
 }
 
 type Emiting struct {
 	Count         int
 	HumanReadable string
+	RemainingTime *string
 }
 
 // NewApp creates a new App application struct
@@ -43,14 +45,16 @@ func (a *App) GetCount() int {
 }
 
 func (a *App) StopTicker() {
+	d := "00m00.00"
+	a.remainingTime = &d
 	if a.ticker != nil {
-
 		a.ticker.Stop()
 	}
 	fmt.Println("Ticker stopped")
 }
 
 func (a *App) StartTickerLoop(interval string, expiration string) {
+	a.remainingTime = def
 	t, err := time.ParseDuration(interval)
 	if err != nil {
 		fmt.Println("Parse duration error")
@@ -73,9 +77,12 @@ func (a *App) StartTickerLoop(interval string, expiration string) {
 				// Do something on each tick
 				fmt.Println("going", a.count)
 				a.count++
-
-				if time.Now().After(expiredAt) {
+				r := time.Since(expiredAt).String()
+				a.remainingTime = &r
+				if time.Now().Add(1 * time.Second).After(expiredAt) {
 					fmt.Println("stop")
+					s := "00:00.00"
+					a.remainingTime = &s
 					a.ticker.Stop()
 					return
 				}
@@ -96,7 +103,7 @@ func (a *App) StartStopwatch(interval string) {
 		for {
 			t := <-ticker.C
 			a.humanReadeble = t.Local().Format("15:04:05")
-			runtime.EventsEmit(a.ctx, "timer-update", Emiting{Count: a.count, HumanReadable: a.humanReadeble})
+			runtime.EventsEmit(a.ctx, "timer-update", Emiting{Count: a.count, HumanReadable: a.humanReadeble, RemainingTime: a.remainingTime})
 		}
 	}()
 }
